@@ -288,16 +288,26 @@
                 <input type="hidden" id="case-id">
                 <div class="grid-2">
                     <div class="form-group">
-                        <label>Navn på person</label>
-                        <input type="text" id="case-name" required placeholder="Fuldstændigt navn">
+                        <label>Type</label>
+                        <select id="case-type" onchange="toggleCaseType()">
+                            <option value="borger">Enkeltperson (Borger)</option>
+                            <option value="bande">Gruppe / Bande</option>
+                        </select>
                     </div>
                     <div class="form-group">
+                        <label id="label-case-name">Navn på person</label>
+                        <input type="text" id="case-name" required placeholder="Fuldstændigt navn eller bandenavn">
+                    </div>
+                </div>
+
+                <div class="grid-3" style="margin-top:1rem;">
+                    <div class="form-group" id="group-case-cpr">
                         <label>CPR-Nummer</label>
-                        <input type="text" id="case-cpr" required placeholder="XXXXXX-XXXX">
+                        <input type="text" id="case-cpr" placeholder="XXXXXX-XXXX">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="group-case-dob">
                         <label>Fødselsdag</label>
-                        <input type="date" id="case-dob" required>
+                        <input type="date" id="case-dob">
                     </div>
                     <div class="form-group">
                         <label>Status</label>
