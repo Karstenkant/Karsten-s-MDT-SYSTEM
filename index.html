@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POLITI SYSTEMER - Aarhus RP</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body class="portal-body">
+
+        <div class="police-logo">
+            <img src="midt vest.png" alt="Politi Logo" style="max-width:200px; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div class="logo-text">POLITI</div>
+            <span class="subtitle">MIDT- OG VESTJYLLAND</span>
+        </div>
+
+    <div class="portal-grid">
+        <a href="login.html" class="portal-card">
+            <span class="portal-icon">🖥️</span>
+            <h2>MDT System</h2>
+            <p>Personregister, sagsbehandling, CPR-opslag og ændringshistorik</p>
+            <span class="portal-badge badge-live"><span class="status-dot status-online"></span>Online</span>
+        </a>
+
+        <a href="login.html" class="portal-card" id="boede-link">
+            <span class="portal-icon">⚖️</span>
+            <h2>Bøderegister</h2>
+            <p>Udsted bøder, se bødejournal, paragraffer og synkronisering med Discord</p>
+            <span class="portal-badge badge-live"><span class="status-dot status-online"></span>Online</span>
+        </a>
+
+        <a href="login.html" class="portal-card" id="admin-link">
+            <span class="portal-icon">⚙️</span>
+            <h2>Admin Panel</h2>
+            <p>Brugerstyring, opret betjente, ændr roller, papirkurv og systemkontrol</p>
+            <span class="portal-badge badge-live"><span class="status-dot status-online"></span>Online</span>
+        </a>
+    </div>
+
+    <div class="portal-footer">
+        <p>&copy; 2026 Aarhus RP — Rigspolitiet MDT Terminal v2.0</p>
+        <p>🤖 Discord Bot <span class="portal-badge badge-discord">Integreret</span></p>
+    </div>
+
+    <!-- Auto-redirect hvis allerede logget ind -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script>
+        // Hvis brugeren allerede er logget ind, send dem direkte til dashboard
+        (async () => {
+            const { data: { user } } = await _supabase.auth.getUser();
+            if (user) {
+                window.location.href = 'dashboard.html';
+            }
+        })();
+    </script>
+</body>
+</html>

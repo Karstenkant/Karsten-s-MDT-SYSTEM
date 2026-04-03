@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aarhus Politi - Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-logo">
+            <img src="midt vest.png" alt="Politi Logo" width="120">
+            <h1 style="margin-top: 1rem;">RIGSPOLITIET</h1>
+            <p>Aarhus MDT Terminal v2.0</p>
+        </div>
+
+        <div class="login-divider">
+            <span>AUTENTIFICERING</span>
+        </div>
+
+        <div id="login-error" class="error-msg"></div>
+
+        <form id="login-form">
+            <div class="input-group">
+                <label for="email">LOGIN EMAIL</label>
+                <div style="position: relative;">
+                    <input type="email" id="email" placeholder="F.eks. betjent@aarhus.dk" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="password">ADGANGSKODE</label>
+                <input type="password" id="password" placeholder="••••••" required>
+            </div>
+
+            <button type="submit" class="btn-primary" id="login-btn">LOG IND PÅ SYSTEMET</button>
+        </form>
+
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <a href="#" onclick="handleForgot()" style="color: var(--police-text-muted); font-size: 0.8rem; text-decoration: none;">Glemt adgangskode?</a>
+        </div>
+    </div>
+
+    <script src="supabase.js"></script>
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const loginBtn = document.getElementById('login-btn');
+        const errorMsg = document.getElementById('login-error');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.innerText = '';
+            loginBtn.disabled = true;
+            loginBtn.innerText = 'VALIDERER...';
+
+            const email = document.getElementById('email').value.toLowerCase().trim();
+            const password = document.getElementById('password').value;
+
+            try {
+                loginBtn.innerText = 'LOGGER IND...';
+
+                const { data, error } = await _supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    if (error.message.includes('Invalid login credentials')) {
+                        throw new Error('Forkert email eller adgangskode.');
+                    }
+                    throw error;
+                }
+
+                // Succesfuldt login - viderestil til dashboard
+                window.location.href = 'dashboard.html';
+            } catch (err) {
+                console.error('Login fejl:', err);
+                errorMsg.innerText = err.message || 'Ugyldigt login.';
+                loginBtn.disabled = false;
+                loginBtn.innerText = 'LOG IND PÅ SYSTEMET';
+            }
+        });
+
+        function handleForgot() {
+            alert('Kontakt ledelsen på Discord for at nulstille din adgangskode.');
+        }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

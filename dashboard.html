@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POLITI MDT - System</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dashboard-body">
+    <div class="scanner"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- FLÅDE SYSTEM MODAL (Påbudt ved start) -->
+    <div id="duty-overlay" class="loading-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.95); z-index:2000; align-items:center; justify-content:center; flex-direction:column; backdrop-filter: blur(10px);">
+        <div class="login-container" style="background:#1e293b; max-width:500px;">
+            <div style="text-align:center; margin-bottom:1.5rem;">
+                <img src="midt vest.png" alt="Logo" width="80">
+                <h1 style="margin-top:10px;">FLÅDE SYSTEM</h1>
+                <p>Vælg din enhed og indtast P-nummer for at gå på vagt.</p>
+            </div>
+            
+            <div class="unit-grid">
+                <div class="unit-chip selected" data-unit="Patrulje">🚓 Patrulje</div>
+                <div class="unit-chip" data-unit="AKS">🛡️ AKS</div>
+                <div class="unit-chip" data-unit="MC">🏍️ MC</div>
+                <div class="unit-chip" data-unit="Civil">🕵️ Civil</div>
+            </div>
+
+            <div class="input-group">
+                <label>Bekræft P-Nummer</label>
+                <input type="text" id="confirm-pnum" placeholder="Døren åbner først når P-nummer er valideret" style="text-align:center; letter-spacing:3px;">
+            </div>
+
+            <button id="go-on-duty-btn" class="btn-primary" style="padding:1.2rem;">MELD PÅ VAGT NU</button>
+            <div id="duty-msg" style="text-align:center; margin-top:10px; color:var(--error-red); font-size:0.8rem;"></div>
+
+            <!-- ADMIN BYPASS SECTION -->
+            <div class="admin-login-bypass" style="margin-top:2rem; border-top:1px solid rgba(255,255,255,0.1); padding-top:1.5rem; text-align:center;">
+                <p style="font-size:0.8rem; color:var(--police-text-muted); margin-bottom:10px;">ELLER TILGÅ SOM ADMIN</p>
+                <div class="input-group">
+                    <input type="email" id="admin-email-login" placeholder="Indtast din admin-email" style="text-align:center; background:rgba(0,0,0,0.2); border-color:rgba(255,255,255,0.1);">
+                </div>
+                <button id="admin-login-btn" class="btn-secondary" style="width:100%; margin-top:10px; background:rgba(59, 130, 246, 0.1); border:1px solid var(--police-accent); color:var(--police-accent);">LOGIN SOM ADMIN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOCK SCREEN -->
+    <div id="lock-screen" class="loading-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:3000; align-items:center; justify-content:center; flex-direction:column;">
+        <div class="login-container">
+            <h2>SESSION LÅST</h2>
+            <p>Indtast kodeord for at fortsætte</p>
+            <form id="unlock-form">
+                <input type="password" id="unlock-password" placeholder="Adgangskode" required style="margin-bottom:1rem;">
+                <button type="submit" class="btn-primary">LÅS OP</button>
+            </form>
+        </div>
+    </div>
+
+        <!-- TOP NAVIGATION BAR -->
+        <nav class="top-nav">
+            <div class="nav-left">
+                <img src="midt vest.png" alt="Logo" class="nav-logo" style="cursor:pointer;" onclick="location.reload()">
+                <div class="nav-brand" style="cursor:pointer;" onclick="location.reload()">AARHUS MDT</div>
+            </div>
+
+            <div class="nav-center">
+                <button class="nav-item active" data-target="dash-section" title="Dashboard">🏠 Home</button>
+                <button class="nav-item" data-target="wanted-section" title="Efterlyste Personer">🚨 Efterlyste</button>
+                <button class="nav-item" data-target="map-section" title="By Kort">🗺️ Kort</button>
+                <button class="nav-item" data-target="search-section" title="Søg i Person Register">📋 Person Register</button>
+                <button class="nav-item" data-target="attester-section" title="Straffeattester">📂 Straffeattester</button>
+                <button class="nav-item" data-target="create-section" title="Udsted Straffe">⚖️ Lovovertrædelser</button>
+                <button class="nav-item" data-target="boeder-section" title="Bøde Log">📜 Bødelog</button>
+                <button class="nav-item admin-only" data-target="admin-section" style="display:none;" title="Admin Kontrol">⚙️ Ansatte</button>
+            </div>
+
+            <div class="nav-right">
+                <div id="live-clock" class="nav-clock">--:--:--</div>
+                <div class="profile-dropdown">
+                    <button id="profile-toggle" class="profile-btn">
+                        <span id="pnum-display">P-000</span>
+                        <i data-lucide="chevron-down"></i>
+                    </button>
+                    <div id="profile-menu" class="dropdown-content">
+                        <div class="dropdown-header">
+                            <strong id="user-display-name">...</strong>
+                            <span id="unit-display" style="font-size:0.75rem; color:var(--police-text-muted);">Enhed: --</span>
+                        </div>
+                        <hr style="border:0; border-top:1px solid var(--police-border); margin:5px 0;">
+                        <button id="nav-profile" class="dropdown-item">👤 Skift Adgangskode</button>
+                        <button id="nav-off-duty" class="dropdown-item" style="color:var(--warning-yellow);">🏃 Gå af vagt</button>
+                        <button id="nav-logout" class="dropdown-item" style="color:var(--error-red);">🚪 Log af Vagt</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN -->
+        <main class="main-content">
+            <header class="top-bar" style="margin-bottom:1.5rem; justify-content: flex-start;">
+                <div id="welcome-msg">Velkommen, <span id="user-badge" class="badge on-duty-badge">...</span></div>
+                <div style="flex:1"></div>
+                <div id="duty-timer" style="font-size:0.8rem; color:var(--police-text-muted);">Vagttid: <span id="timer-val">00:00</span></div>
+            </header>
+
+            <!-- DASHBOARD SECTION -->
+            <div id="dash-section" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card" style="cursor:pointer" onclick="document.querySelector('[data-target=\'search-section\']').click()">
+                        <div class="label">Total Sager</div>
+                        <div class="value" id="stat-total-sager">0</div>
+                    </div>
+                    <div class="stat-card" style="cursor:pointer" onclick="document.querySelector('[data-target=\'wanted-section\']').click()">
+                        <div class="label">Efterlyste</div>
+                        <div class="value" style="color:var(--error-red);" id="stat-wanted">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Personer i system</div>
+                        <div class="value" id="stat-born">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Aktive Enheder</div>
+                        <div class="value" style="color:var(--success-green);" id="stat-active">0</div>
+                    </div>
+                </div>
+
+                <div class="activity-grid">
+                    <div class="stat-card">
+                        <h3>Seneste Aktivitet</h3>
+                        <div id="recent-activity" style="margin-top:1rem;">Henter log...</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Hurtigt Overblik</h3>
+                        <div id="active-units" style="margin-top:1rem;">Henter flåde...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WANTED SECTION -->
+            <div id="wanted-section" class="tab-content">
+                <div class="header-flex">
+                    <h1>🚨 EFTERLYSTE PERSONER</h1>
+                    <button class="btn-primary" onclick="openAddWantedModal()" style="width:auto">+ NY EFTERLYSNING</button>
+                </div>
+                <div id="wanted-list-grid" class="grid-3" style="margin-top:2rem;">
+                    <!-- Indlæses via JS -->
+                </div>
+            </div>
+
+            <!-- MAP SECTION -->
+            <div id="map-section" class="tab-content" style="height: calc(100vh - 200px);">
+                <div class="header-flex">
+                    <h1>🗺️ BY KORT (ERLC)</h1>
+                    <p>Aarhus C (Storbyen) & Randers C (Springfield)</p>
+                </div>
+                <iframe src="https://erlc-hub.pages.dev/" style="width:100%; height:100%; border:1px solid var(--police-border); border-radius:12px; margin-top:10px;"></iframe>
+            </div>
+
+            <!-- ADMIN PANEL SECTION (Merged) -->
+            <div id="admin-section" class="tab-content">
+                <div class="header-flex">
+                    <h1>Admin Panel</h1>
+                    <p>Styr betjente og systemindstillinger</p>
+                </div>
+
+                <div class="grid-2">
+                    <!-- Opret Bruger -->
+                    <div class="stat-card">
+                        <h3><i class="fas fa-user-plus"></i> Opret Ny Betjent</h3>
+                        <form id="create-user-form" style="margin-top:15px;">
+                            <div class="form-group">
+                                <label>Navn</label>
+                                <input type="text" id="new-user-name" placeholder="F.eks. Jensen" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="new-user-email" placeholder="betjent@mail.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Kodeord</label>
+                                <input type="password" id="new-user-pass" placeholder="F.eks. 1234" required>
+                            </div>
+                            <div class="form-group">
+                                <label>P-Nummer</label>
+                                <input type="text" id="new-user-pnum" placeholder="F.eks. P-001">
+                            </div>
+                            <div class="form-group">
+                                <label>Discord ID</label>
+                                <input type="text" id="new-user-discord" placeholder="Valgfrit">
+                            </div>
+                            <div class="form-group">
+                                <label>Rolle</label>
+                                <select id="new-user-role" style="background:rgba(15, 23, 42, 0.6); padding:0.8rem; border-radius:8px; width:100%; color:white; border:1px solid var(--police-border);">
+                                    <option value="betjent">Politibetjent</option>
+                                    <option value="admin">Politi Ledelse (Admin)</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary" style="width:100%; margin-top:20px;">OPRET KONTO</button>
+                        </form>
+                    </div>
+
+                    <!-- Bruger Liste -->
+                    <div class="stat-card">
+                        <h3><i class="fas fa-users"></i> Eksisterende Betjente</h3>
+                        <div id="admin-user-list" style="margin-top:15px; max-height:400px; overflow-y:auto;">
+                            <!-- Indlæses via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SØG SECTION -->
+            <div id="search-section" class="tab-content">
+                <div class="header-flex" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                    <h1>Register Opslag</h1>
+                    <button class="btn-primary" onclick="openCreateCaseModal()" style="padding: 0.8rem 1.5rem;">+ NY SAG</button>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="search-input" placeholder="Søg på Navn, CPR eller P-nummer..." style="font-size:1.1rem; padding:1.2rem;">
+                </div>
+                <div class="sags-liste" id="sags-liste">
+                    <div class="loading">Søg i databasen...</div>
+                </div>
+            </div>
+
+            <!-- STRAFFESYSTEM (NY) -->
+            <div id="create-section" class="tab-content">
+                <h1>Bøderegnskab & Straffe</h1>
+                <div class="offense-grid">
+                    <div class="stat-card">
+                        <h3>1. Vælg Lovovertrædelser</h3>
+                        <div id="straffe-katalog" style="margin-top:10px; max-height:400px; overflow-y:auto; border:1px solid var(--police-border); border-radius:8px;"></div>
+                    </div>
+                    <div class="stat-card" style="border-color:var(--police-accent);">
+                        <h3>2. Udsted Straf</h3>
+                        <form id="create-boede-form" style="margin-top:1rem;">
+                            <div class="input-group">
+                                <label>Vælg Borger (Navn eller ID)</label>
+                                <input type="text" id="boede-borger" placeholder="Indtast navnet her..." required>
+                            </div>
+                            <div class="penalty-summary" id="penalty-summary">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                                    <span>Bøde:</span><span id="sum-fine" style="color:var(--warning-yellow); font-weight:700;">0 kr.</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span>Fængsel:</span><span id="sum-jail" style="color:var(--error-red); font-weight:700;">0 dage</span>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin-top:1rem;">
+                                <label>Sagsnotat (Vigtigt!)</label>
+                                <textarea id="boede-aarsag" rows="4" placeholder="Beskriv forløbet kort..."></textarea>
+                            </div>
+                            <button type="submit" class="btn-primary" style="margin-top:10px;">GODKEND & UDSTED</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resten af seksionerne herunder (Admin, Bødelog etc.) -->
+            <div id="boeder-section" class="tab-content">
+                <h1>📜 Bøde Log</h1>
+                <div class="sags-liste" id="boeder-liste"></div>
+            </div>
+
+            <div id="attester-section" class="tab-content">
+                <h1>👤 Straffeattester</h1>
+                <div class="input-group"><input type="text" id="search-attest-input" placeholder="Søg borger..."></div>
+                <div class="sags-liste" id="attester-liste"></div>
+            </div>
+
+
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    
+    <!-- CASE MODAL (CREATE/EDIT) -->
+    <div id="case-modal" class="modal">
+        <div class="modal-content" style="max-width:700px;">
+            <div class="modal-header">
+                <h2 id="case-modal-title">SAGSBEHANDLING</h2>
+                <i class="close-modal" onclick="closeCaseModal()">&times;</i>
+            </div>
+            <form id="case-form">
+                <input type="hidden" id="case-id">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Navn på person</label>
+                        <input type="text" id="case-name" required placeholder="Fuldstændigt navn">
+                    </div>
+                    <div class="form-group">
+                        <label>CPR-Nummer</label>
+                        <input type="text" id="case-cpr" required placeholder="XXXXXX-XXXX">
+                    </div>
+                    <div class="form-group">
+                        <label>Fødselsdag</label>
+                        <input type="date" id="case-dob" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="case-status">
+                            <option value="aktiv">Aktiv</option>
+                            <option value="lukket">Lukket</option>
+                            <option value="henlagt">Henlagt</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:1rem;">
+                    <label>Sagsbeskrivelse / Forløb</label>
+                    <textarea id="case-desc" rows="6" placeholder="Beskriv hændelsen i detaljer..."></textarea>
+                </div>
+
+                <div class="form-group" style="margin-top:1.5rem; border-top:1px solid var(--police-border); padding-top:1rem;">
+                    <label>📁 SAGSARKIV (Billeder & Filer)</label>
+                    <div id="case-files-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"></div>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="case-file-url" placeholder="Billede URL (f.eks. imgur)..." style="flex:1;">
+                        <button type="button" onclick="addFileToCase()" class="btn-secondary" style="width:auto; padding:0 1rem;">TILFØJ</button>
+                    </div>
+                </div>
+                
+                <div id="case-history" style="margin-top:1.5rem; display:none;">
+                    <h3>Ændringslog</h3>
+                    <div id="case-log-container" class="log-container"></div>
+                </div>
+
+                <div class="modal-footer" style="margin-top:2rem; display:flex; gap:10px;">
+                    <button type="submit" class="btn-primary" style="flex:1;">GEM SAG</button>
+                    <button type="button" id="delete-case-btn" class="btn-secondary" style="background:var(--error-red); display:none;">SLET SAG</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ATTEST MODAL -->
+    <div id="attest-modal" class="modal">
+        <div class="modal-content" style="max-width:800px; background:var(--police-sidebar);">
+            <div class="modal-header">
+                <h2>STRAFFEATTEST</h2>
+                <span class="close-modal" id="close-attest-modal">&times;</span>
+            </div>
+            <div id="attest-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- PROFILE / PASSWORD MODAL -->
+    <div id="profile-modal" class="modal">
+        <div class="modal-content" style="max-width:400px; background:var(--police-sidebar);">
+            <div class="modal-header">
+                <h2>DIN PROFIL</h2>
+                <span class="close-modal" onclick="closeProfileModal()">&times;</span>
+            </div>
+            <div style="padding:1rem;">
+                <p style="font-size:0.9rem; color:var(--police-text-muted); margin-bottom:1.5rem;">Her kan du ændre din personlige adgangskode til MDT systemet.</p>
+                <form id="change-password-form">
+                    <div class="form-group">
+                        <label>Nyt Kodeord</label>
+                        <input type="password" id="new-password-val" placeholder="Indtast nyt kodeord" required minlength="6">
+                    </div>
+                    <div class="form-group" style="margin-top:10px;">
+                        <label>Gentag Kodeord</label>
+                        <input type="password" id="confirm-password-val" placeholder="Gentag nyt kodeord" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn-primary" style="width:100%; margin-top:1.5rem;">OPDATER KODEORD</button>
+                </form>
+                <div id="profile-msg" style="margin-top:15px; text-align:center; font-size:0.85rem;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD WANTED MODAL -->
+    <div id="add-wanted-modal" class="modal">
+        <div class="modal-content" style="max-width:500px; background:var(--police-sidebar);">
+            <div class="modal-header">
+                <h2>EFTERLYS PERSON</h2>
+                <span class="close-modal" onclick="closeAddWantedModal()">&times;</span>
+            </div>
+            <div style="padding:1rem;">
+                <form id="add-wanted-form">
+                    <div class="form-group">
+                        <label>Navn</label>
+                        <input type="text" id="wanted-name" placeholder="F.eks. Kurt Jensen" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Billede URL</label>
+                        <input type="text" id="wanted-image" placeholder="https://link-til-billede.com/foto.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label>Efterlyst for</label>
+                        <textarea id="wanted-reason" rows="3" placeholder="Beskriv grunden..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Farlighed (⚠️ Niveau)</label>
+                        <select id="wanted-danger">
+                            <option value="1">Lav (Blå)</option>
+                            <option value="2">Middel (Gul)</option>
+                            <option value="3">Høj (Rød/Farlig)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width:100%; margin-top:1rem;">OPRET EFTERLYSNING</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIF-TOAST -->
+    <div id="notif-toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
